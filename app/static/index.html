@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Daily Checklist</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Daily Checklist</h1>
+      <p id="today-label" class="muted"></p>
+    </header>
+
+    <form id="add-form" class="card add-form" autocomplete="off">
+      <input id="add-title" type="text" placeholder="What needs doing?" maxlength="500" required>
+      <div class="add-row">
+        <input id="add-date" type="date" aria-label="Planned date">
+        <button type="button" id="add-tomorrow" class="ghost">Tomorrow</button>
+        <label class="star-toggle"><input id="add-important" type="checkbox"> ★ Important</label>
+        <button type="submit" class="primary">Add</button>
+      </div>
+    </form>
+
+    <p id="error" class="error" hidden></p>
+
+    <section>
+      <h2>Today <span id="count-today" class="count"></span></h2>
+      <ul id="list-today" class="task-list"></ul>
+      <p id="empty-today" class="empty" hidden>Nothing pending. Nice work.</p>
+    </section>
+
+    <section>
+      <h2>Upcoming <span id="count-upcoming" class="count"></span></h2>
+      <div id="list-upcoming"></div>
+      <p id="empty-upcoming" class="empty" hidden>No future tasks planned.</p>
+    </section>
+
+    <section>
+      <details id="done-section">
+        <summary><h2>Done <span id="count-done" class="count"></span></h2></summary>
+        <ul id="list-done" class="task-list"></ul>
+      </details>
+    </section>
+  </main>
+
+  <template id="task-template">
+    <li class="task">
+      <div class="task-main">
+        <input type="checkbox" class="task-check" aria-label="Mark done">
+        <button type="button" class="star" title="Toggle important">★</button>
+        <span class="task-title" title="Double-click to edit"></span>
+        <span class="tag overdue-tag" hidden>overdue</span>
+        <span class="tag planned-tag" hidden></span>
+        <button type="button" class="icon delete" title="Delete task">✕</button>
+      </div>
+      <div class="progress-row">
+        <div class="bar" role="slider" aria-valuemin="0" aria-valuemax="100" tabindex="0"
+             title="Click to set progress">
+          <div class="bar-fill"></div>
+        </div>
+        <span class="pct"></span>
+        <span class="quick">
+          <button type="button" data-p="25">25</button>
+          <button type="button" data-p="50">50</button>
+          <button type="button" data-p="75">75</button>
+        </span>
+      </div>
+      <div class="meta">
+        <span class="dates"></span>
+        <button type="button" class="link notes-toggle"></button>
+      </div>
+      <div class="notes" hidden>
+        <form class="note-form">
+          <input type="text" placeholder="Add a progress note…" required>
+          <button type="submit" class="ghost">Add note</button>
+        </form>
+        <ul class="note-list"></ul>
+      </div>
+    </li>
+  </template>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
