@@ -42,6 +42,11 @@ def test_index_page_served(client):
     assert "Daily Checklist" in r.text
 
 
+def test_page_files_are_revalidated_not_cached(client):
+    for path in ("/", "/static/app.js", "/static/styles.css"):
+        assert client.get(path).headers["cache-control"] == "no-cache"
+
+
 def test_create_task_defaults(client):
     t = create(client, title="Write report")
     assert t["title"] == "Write report"

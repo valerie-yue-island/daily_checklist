@@ -28,7 +28,11 @@ driver such as `psycopg[binary]` first).
   progress. Checking the box sets 100% and moves the task to *Done*;
   unchecking sets it back to 0%.
 - **Notes**: open *Show notes* to log what you did ("read pages 1–20").
-- **Edit** a title by double-clicking it. **✕** deletes a task.
+- **Edit** a title by double-clicking it. **remove** deletes a task.
+- **Look & feel**: the page is styled like a hand-drawn restaurant menu. The
+  two dots in the top-right switch the ink between tomato red and blueberry
+  blue; **✦ animations** turns the doodle animations on/off (it starts from
+  your system's reduce-motion setting and remembers your choice).
 
 ### Queue order
 1. **Today** — unfinished, due today, overdue, or undated. Important first,
