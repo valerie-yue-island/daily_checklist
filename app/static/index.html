@@ -4,63 +4,172 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Daily Checklist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Patrick+Hand&family=Sacramento&display=swap">
   <link rel="stylesheet" href="/static/styles.css">
+  <script>
+    (() => {
+      const root = document.documentElement;
+      let ink = null, motion = null;
+      try { ink = localStorage.getItem("ink"); motion = localStorage.getItem("motion"); } catch {}
+      if (ink) root.dataset.ink = ink;
+      root.dataset.motion = motion || (matchMedia("(prefers-reduced-motion: reduce)").matches ? "off" : "on");
+    })();
+  </script>
 </head>
 <body>
-  <main>
-    <header>
-      <h1>Daily Checklist</h1>
-      <p id="today-label" class="muted"></p>
+  <!-- Hand-drawn doodles, all single-stroke line art in the current ink colour -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="wobble">
+        <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="3"/>
+        <feDisplacementMap in="SourceGraphic" scale="7"/>
+      </filter>
+    </defs>
+    <symbol id="d-tomato" viewBox="0 0 64 64">
+      <path d="M32 18c-12 0-22 8-22 21s10 19 22 19 22-6 22-19-10-21-22-21z"/>
+      <path d="M32 18l-2-9M32 18c-4-4-10-4-13-2M32 18c4-4 10-4 13-1M32 18c-1 4-6 6-9 6M32 18c2 4 6 6 10 5"/>
+      <path d="M24 22c-4 8-4 22 2 34M40 22c4 8 4 22-2 34"/>
+    </symbol>
+    <symbol id="d-glass" viewBox="0 0 64 64">
+      <path d="M21 8h22c0 14-4 22-11 22S21 22 21 8z"/>
+      <path class="wine" d="M23 15c5 2 13-2 18 0M23 19c5 2 12-2 17 0M24 23c4 2 11-2 15 0"/>
+      <path d="M32 30v20M22 55c4-4 16-4 20 0"/>
+    </symbol>
+    <symbol id="d-lemon" viewBox="0 0 64 64">
+      <path d="M8 34a24 24 0 0 0 48 0z"/>
+      <path d="M13 35a19 19 0 0 0 38 0"/>
+      <path d="M32 35v17M32 35l-11 12M32 35l11 12M32 35l-16 6M32 35l16 6"/>
+    </symbol>
+    <symbol id="d-coffee" viewBox="0 0 64 64">
+      <path d="M16 26h28v8c0 9-6 14-14 14s-14-5-14-14z"/>
+      <path d="M44 29c6 0 8 3 7 6s-4 5-8 5"/>
+      <path d="M8 51c6 5 42 5 48 0"/>
+      <path class="steam s1" d="M24 20c-3-4 3-6 0-10"/>
+      <path class="steam s2" d="M32 20c-3-4 3-6 0-10"/>
+      <path class="steam s3" d="M40 20c-3-4 3-6 0-10"/>
+    </symbol>
+    <symbol id="d-bun" viewBox="0 0 64 64">
+      <path d="M10 38c0-12 10-20 22-20s22 8 22 20-10 16-22 16S10 50 10 38z"/>
+      <path d="M32 36c-3 0-4-3-2-5s7-1 8 3-3 9-9 8-10-6-8-12 10-10 16-8"/>
+    </symbol>
+    <symbol id="d-donut" viewBox="0 0 64 64">
+      <path d="M32 10a22 22 0 1 1 0 44a22 22 0 1 1 0-44z"/>
+      <path d="M32 26a6 6 0 1 1 0 12a6 6 0 1 1 0-12z"/>
+      <path d="M20 22l3 2M42 18l-1 3M46 32l-3 1M22 40l3-1M38 45l1-3M30 16l2 1M17 31l3 0"/>
+    </symbol>
+    <symbol id="d-candles" viewBox="0 0 64 64">
+      <path d="M20 24h8v30h-8zM36 30h8v24h-8z"/>
+      <path class="flame f1" d="M24 20c-3-3 0-8 0-11 0 3 3 8 0 11z"/>
+      <path class="flame f2" d="M40 26c-3-3 0-8 0-11 0 3 3 8 0 11z"/>
+      <path d="M14 56h36"/>
+    </symbol>
+    <symbol id="d-fish" viewBox="0 0 64 64">
+      <path d="M8 32c10-10 30-10 40 0-10 10-30 10-40 0z"/>
+      <path class="tail" d="M48 32l9-7v14z"/>
+      <path d="M16 30h.01M27 29h.01M33 34h.01M39 29h.01"/>
+    </symbol>
+    <symbol id="d-squiggle" viewBox="0 0 200 20" preserveAspectRatio="none">
+      <path d="M2 10c12-10 22 10 34 0s22 10 34 0 22 10 34 0 22 10 34 0 22 10 34 0 22 10 26 0"/>
+    </symbol>
+  </svg>
+
+  <div class="page">
+    <svg class="doodle dl-1"><use href="#d-tomato"/></svg>
+    <svg class="doodle dl-2"><use href="#d-lemon"/></svg>
+    <svg class="doodle dl-3"><use href="#d-glass"/></svg>
+    <svg class="doodle dl-4"><use href="#d-candles"/></svg>
+    <svg class="doodle dr-1"><use href="#d-coffee"/></svg>
+    <svg class="doodle dr-2"><use href="#d-fish"/></svg>
+    <svg class="doodle dr-3"><use href="#d-bun"/></svg>
+    <svg class="doodle dr-4"><use href="#d-donut"/></svg>
+
+    <div class="ink-switch" role="group" aria-label="Ink colour">
+      <button type="button" data-ink-choice="tomato" title="Tomato ink"></button>
+      <button type="button" data-ink-choice="blueberry" title="Blueberry ink"></button>
+      <button type="button" id="motion-toggle" class="motion-toggle">✦</button>
+    </div>
+
+    <header class="masthead">
+      <span id="side-day" class="side"></span>
+      <div class="title-wrap">
+        <h1>Menu</h1>
+        <svg class="title-swash" viewBox="0 0 200 40" aria-hidden="true">
+          <path d="M4 30c40 6 80-4 110-14s50-18 70-6c10 6 6 18-4 16-8-2-6-14 6-18"/>
+        </svg>
+      </div>
+      <span id="side-date" class="side"></span>
+      <p class="house">( daily checklist <span class="house-sub">· freshly made every day</span> )</p>
     </header>
 
-    <form id="add-form" class="card add-form" autocomplete="off">
-      <input id="add-title" type="text" placeholder="What needs doing?" maxlength="500" required>
-      <div class="add-row">
-        <input id="add-date" type="date" aria-label="Planned date">
-        <button type="button" id="add-tomorrow" class="ghost">Tomorrow</button>
-        <label class="star-toggle"><input id="add-important" type="checkbox"> ★ Important</label>
-        <button type="submit" class="primary">Add</button>
-      </div>
-    </form>
+    <main class="menu-card">
+      <form id="add-form" class="add-form" autocomplete="off">
+        <label for="add-title" class="add-label">Place an order</label>
+        <input id="add-title" type="text" placeholder="what's cooking today?" maxlength="500" required>
+        <div class="add-row">
+          <input id="add-date" type="date" aria-label="Planned date">
+          <button type="button" id="add-tomorrow" class="pill">tomorrow</button>
+          <label class="chef-pick"><input id="add-important" type="checkbox"> <span>♥ chef's pick</span></label>
+          <button type="submit" class="pill solid">add to menu</button>
+        </div>
+      </form>
 
-    <p id="error" class="error" hidden></p>
+      <p id="error" class="error" hidden></p>
 
-    <section>
-      <h2>Today <span id="count-today" class="count"></span></h2>
-      <ul id="list-today" class="task-list"></ul>
-      <p id="empty-today" class="empty" hidden>Nothing pending. Nice work.</p>
-    </section>
+      <section class="course">
+        <svg class="course-icon"><use href="#d-coffee"/></svg>
+        <h2>Today's Specials <span id="count-today" class="count"></span></h2>
+        <p class="course-sub">still cooking</p>
+        <ul id="list-today" class="task-list"></ul>
+        <p id="empty-today" class="empty" hidden>the kitchen is clear ~ nice work!</p>
+      </section>
 
-    <section>
-      <h2>Upcoming <span id="count-upcoming" class="count"></span></h2>
-      <div id="list-upcoming"></div>
-      <p id="empty-upcoming" class="empty" hidden>No future tasks planned.</p>
-    </section>
+      <svg class="divider" aria-hidden="true"><use href="#d-squiggle"/></svg>
 
-    <section>
-      <details id="done-section">
-        <summary><h2>Done <span id="count-done" class="count"></span></h2></summary>
-        <ul id="list-done" class="task-list"></ul>
-      </details>
-    </section>
-  </main>
+      <section class="course">
+        <svg class="course-icon"><use href="#d-bun"/></svg>
+        <h2>Coming Up <span id="count-upcoming" class="count"></span></h2>
+        <p class="course-sub">tomorrow &amp; beyond</p>
+        <div id="list-upcoming"></div>
+        <p id="empty-upcoming" class="empty" hidden>nothing on the prep list yet</p>
+      </section>
+
+      <svg class="divider" aria-hidden="true"><use href="#d-squiggle"/></svg>
+
+      <section class="course">
+        <details id="done-section">
+          <summary>
+            <svg class="course-icon"><use href="#d-donut"/></svg>
+            <h2>Served <span id="count-done" class="count"></span></h2>
+            <p class="course-sub">all done, yum · <span class="peek">tap to peek</span></p>
+          </summary>
+          <ul id="list-done" class="task-list"></ul>
+        </details>
+      </section>
+    </main>
+
+    <footer class="signature">made with love · by chef you</footer>
+  </div>
 
   <template id="task-template">
     <li class="task">
       <div class="task-main">
-        <input type="checkbox" class="task-check" aria-label="Mark done">
-        <button type="button" class="star" title="Toggle important">★</button>
-        <span class="task-title" title="Double-click to edit"></span>
-        <span class="tag overdue-tag" hidden>overdue</span>
+        <input type="checkbox" class="task-check" aria-label="Mark served">
+        <span class="task-title" title="Double-click to rename"></span>
+        <span class="leader" aria-hidden="true"></span>
+        <span class="pct"></span>
+      </div>
+      <div class="tags">
+        <button type="button" class="star" title="Chef's pick (important)">♥</button>
+        <span class="tag overdue-tag" hidden>overdue!</span>
         <span class="tag planned-tag" hidden></span>
-        <button type="button" class="icon delete" title="Delete task">✕</button>
       </div>
       <div class="progress-row">
         <div class="bar" role="slider" aria-valuemin="0" aria-valuemax="100" tabindex="0"
              title="Click to set progress">
           <div class="bar-fill"></div>
         </div>
-        <span class="pct"></span>
         <span class="quick">
           <button type="button" data-p="25">25</button>
           <button type="button" data-p="50">50</button>
@@ -69,12 +178,15 @@
       </div>
       <div class="meta">
         <span class="dates"></span>
-        <button type="button" class="link notes-toggle"></button>
+        <span class="meta-actions">
+          <button type="button" class="link notes-toggle"></button>
+          <button type="button" class="link delete" title="Remove from menu">remove</button>
+        </span>
       </div>
       <div class="notes" hidden>
         <form class="note-form">
-          <input type="text" placeholder="Add a progress note…" required>
-          <button type="submit" class="ghost">Add note</button>
+          <input type="text" placeholder="kitchen note… e.g. read pages 1–20" required>
+          <button type="submit" class="pill">jot</button>
         </form>
         <ul class="note-list"></ul>
       </div>

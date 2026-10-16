@@ -43,6 +43,15 @@ def create_app(database_url: str | None = None,
 
     app = FastAPI(title="Daily Checklist")
 
+    @app.middleware("http")
+    async def revalidate_page_files(request, call_next):
+        # Browsers must check for a newer page/CSS/JS on every load (cheap via ETag),
+        # otherwise UI changes don't show up until a hard refresh.
+        response = await call_next(request)
+        if not request.url.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
     def get_db():
         with SessionLocal() as db:
             yield db

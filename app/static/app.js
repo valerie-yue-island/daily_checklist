@@ -2,6 +2,39 @@
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const openNotes = new Set();
+const prevProgress = new Map();   // task id -> last rendered progress, so bars can grow smoothly
+let flash = null;                 // {id, kind} — one-shot animation for the next render
+const motionOn = () => document.documentElement.dataset.motion === "on";
+
+// ---------- little celebrations ----------
+
+const YUMS = ["yum!", "served!", "bon appétit", "délicieux!", "chef's kiss"];
+
+function celebrate(anchor) {
+  if (!motionOn()) return Promise.resolve();
+  const r = anchor.getBoundingClientRect();
+  const x = r.left + r.width / 2, y = r.top + r.height / 2;
+  for (let i = 0; i < 16; i++) {
+    const s = document.createElement("span");
+    s.className = "sprinkle";
+    const angle = Math.random() * Math.PI * 2, dist = 30 + Math.random() * 45;
+    s.style.left = `${x}px`;
+    s.style.top = `${y}px`;
+    s.style.setProperty("--dx", `${Math.cos(angle) * dist}px`);
+    s.style.setProperty("--dy", `${Math.sin(angle) * dist}px`);
+    s.style.setProperty("--rot", `${Math.random() * 360}deg`);
+    s.addEventListener("animationend", () => s.remove());
+    document.body.append(s);
+  }
+  const yum = document.createElement("span");
+  yum.className = "yum";
+  yum.textContent = YUMS[Math.floor(Math.random() * YUMS.length)];
+  yum.style.left = `${x + 40}px`;
+  yum.style.top = `${y - 24}px`;
+  yum.addEventListener("animationend", () => yum.remove());
+  document.body.append(yum);
+  return new Promise(resolve => setTimeout(resolve, 750));
+}
 
 // ---------- API ----------
 
@@ -67,33 +100,52 @@ function renderTask(task) {
 
   const check = $(".task-check", li);
   check.checked = task.status === "done";
-  check.addEventListener("change", () =>
-    run(() => api("PATCH", `/api/tasks/${task.id}`, { progress: check.checked ? 100 : 0 })));
+  check.addEventListener("change", async () => {
+    if (check.checked) {
+      li.classList.add("serving");
+      await celebrate(check);
+    }
+    run(() => api("PATCH", `/api/tasks/${task.id}`, { progress: check.checked ? 100 : 0 }));
+  });
 
   const star = $(".star", li);
   star.classList.toggle("on", task.important);
   star.setAttribute("aria-pressed", task.important);
-  star.addEventListener("click", () =>
-    run(() => api("PATCH", `/api/tasks/${task.id}`, { important: !task.important })));
+  star.addEventListener("click", () => {
+    if (!task.important) flash = { id: task.id, kind: "heart" };
+    run(() => api("PATCH", `/api/tasks/${task.id}`, { important: !task.important }));
+  });
+
+  if (flash && flash.id === task.id) {
+    if (flash.kind === "new") li.classList.add("plate-in");
+    if (flash.kind === "heart") star.classList.add("pop");
+  }
 
   const title = $(".task-title", li);
   title.textContent = task.title;
   title.addEventListener("dblclick", () => startEditTitle(title, task));
 
   $(".overdue-tag", li).hidden = !task.overdue;
-  const planned = $(".planned-tag", li);
-  if (task.planned_date && task.status !== "done") {
+  if (task.overdue) {
+    const planned = $(".planned-tag", li);
     planned.hidden = false;
-    planned.textContent = `planned ${fmtDate(task.planned_date)}`;
+    planned.textContent = `was for ${fmtDate(task.planned_date)}`;
   }
 
   $(".delete", li).addEventListener("click", () => {
-    if (confirm(`Delete "${task.title}"?`)) run(() => api("DELETE", `/api/tasks/${task.id}`));
+    if (confirm(`Remove "${task.title}" from the menu?`)) run(() => api("DELETE", `/api/tasks/${task.id}`));
   });
 
   // progress bar
   const bar = $(".bar", li);
-  $(".bar-fill", li).style.width = `${task.progress}%`;
+  // grow the bar from its last rendered value to the new one
+  const fill = $(".bar-fill", li);
+  const before = prevProgress.get(task.id);
+  fill.style.width = `${before ?? task.progress}%`;
+  if (before !== undefined && before !== task.progress) {
+    requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = `${task.progress}%`; }));
+  }
+  prevProgress.set(task.id, task.progress);
   $(".pct", li).textContent = `${task.progress}%`;
   bar.setAttribute("aria-valuenow", task.progress);
   const setProgress = p => run(() => api("PATCH", `/api/tasks/${task.id}`, { progress: p }));
@@ -110,15 +162,15 @@ function renderTask(task) {
     b.addEventListener("click", () => setProgress(Number(b.dataset.p))));
 
   // meta
-  let dates = `created ${fmtDate(task.created_at)} · updated ${fmtDateTime(task.updated_at)}`;
-  if (task.completed_at) dates += ` · done ${fmtDateTime(task.completed_at)}`;
+  let dates = `ordered ${fmtDate(task.created_at)} · updated ${fmtDateTime(task.updated_at)}`;
+  if (task.completed_at) dates += ` · served ${fmtDateTime(task.completed_at)}`;
   $(".dates", li).textContent = dates;
 
   // notes
   const notesBox = $(".notes", li);
   const toggle = $(".notes-toggle", li);
   const setToggleLabel = () => {
-    toggle.textContent = `${notesBox.hidden ? "Show" : "Hide"} notes (${task.notes.length})`;
+    toggle.textContent = `${notesBox.hidden ? "notes" : "hide notes"} (${task.notes.length})`;
   };
   notesBox.hidden = !openNotes.has(task.id);
   setToggleLabel();
@@ -201,6 +253,7 @@ function render(data) {
 
   $("#list-done").replaceChildren(...data.done.map(renderTask));
   $("#count-done").textContent = `(${data.done.length})`;
+  flash = null;
 }
 
 async function refresh() {
@@ -221,14 +274,45 @@ $("#add-form").addEventListener("submit", e => {
   const body = { title, important: $("#add-important").checked };
   if ($("#add-date").value) body.planned_date = $("#add-date").value;
   run(async () => {
-    await api("POST", "/api/tasks", body);
+    const created = await api("POST", "/api/tasks", body);
+    flash = { id: created.id, kind: "new" };
     e.target.reset();
     $("#add-title").focus();
   });
 });
 
-$("#today-label").textContent = new Date().toLocaleDateString(undefined, {
-  weekday: "long", month: "long", day: "numeric", year: "numeric",
+// ---------- masthead + ink switch ----------
+
+const now = new Date();
+$("#side-day").textContent = now.toLocaleDateString(undefined, { weekday: "long" });
+$("#side-date").textContent = now.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+  + "\n" + now.getFullYear();
+
+function applyInk(ink) {
+  document.documentElement.dataset.ink = ink;
+  document.querySelectorAll("[data-ink-choice]").forEach(b =>
+    b.setAttribute("aria-pressed", b.dataset.inkChoice === ink));
+}
+applyInk(document.documentElement.dataset.ink || "tomato");
+document.querySelectorAll("[data-ink-choice]").forEach(b =>
+  b.addEventListener("click", () => {
+    applyInk(b.dataset.inkChoice);
+    try { localStorage.setItem("ink", b.dataset.inkChoice); } catch { /* storage unavailable */ }
+  }));
+
+const motionToggle = $("#motion-toggle");
+function showMotionState() {
+  const on = motionOn();
+  motionToggle.setAttribute("aria-pressed", on);
+  motionToggle.textContent = on ? "✦ animations on" : "✧ animations off";
+  motionToggle.title = on ? "Turn animations off" : "Turn animations on";
+}
+showMotionState();
+motionToggle.addEventListener("click", () => {
+  const next = motionOn() ? "off" : "on";
+  document.documentElement.dataset.motion = next;
+  try { localStorage.setItem("motion", next); } catch { /* storage unavailable */ }
+  showMotionState();
 });
 
 refresh().catch(err => showError(`Could not load tasks: ${err.message}`));
